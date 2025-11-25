@@ -10,7 +10,11 @@ The project focuses on clean structure, responsive design, and easy-to-understan
 ## 📸 Project Preview
 
 all SS in images folder 
-
+![alt text](<images/Screenshot 2025-11-25 230226.png>)
+![alt text](<images/Screenshot 2025-11-25 231912.png>)
+![alt text](<images/Screenshot 2025-11-25 231923.png>)
+![alt text](<images/Screenshot 2025-11-25 231954.png>)
+![alt text](<images/Screenshot 2025-11-25 232019.png>)
 
 ---
 
