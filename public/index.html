@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TimeTrack Pro — Landing + Login/Signup Popups</title>
+  <meta name="description" content="Landing page with modal popups for Login and Signup (Home/Back included)." />
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:#0f1721;
+      --muted:#9aa4b2;
+      --accent:#3b82f6;
+      --accent-2:#60a5fa;
+      --glass: rgba(255,255,255,0.03);
+      --soft-shadow: 0 8px 40px rgba(2,6,23,0.6);
+      --glass-border: rgba(255,255,255,0.03);
+      --radius:12px;
+      --max-width:1180px;
+      --ease: cubic-bezier(.2,.9,.2,1);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg,var(--bg),#07101a 120%);
+      color:#e6eef7;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.45;
+      padding:24px;
+    }
+    a{color:inherit;text-decoration:none}
+    .container{max-width:var(--max-width);margin:18px auto;outline:none}
+
+/* ---------- NAVBAR ---------- */
+    .navbar{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:16px;padding:12px 16px;border-radius:14px;
+      background:transparent;
+    }
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo-wrap{
+      width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      display:grid;place-items:center;box-shadow:0 8px 28px rgba(59,130,246,0.16);
+      flex-shrink:0;overflow:hidden;
+    }
+    .brand .title{font-weight:800;color:#fff;font-size:18px;letter-spacing:0.2px}
+    .nav-actions{display:flex;align-items:center;gap:12px}
+    .btn{padding:10px 14px;border-radius:9px;font-weight:600;cursor:pointer;border:1px solid transparent;display:inline-flex;align-items:center;gap:8px}
+    .btn.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));box-shadow:0 10px 30px rgba(59,130,246,0.14);color:#fff}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+    .btn.small{padding:8px 10px;font-size:14px;border-radius:8px}
+
+/* ---------- HERO ---------- */
+    .hero{ text-align:center;padding:36px 8px 12px;margin-top:6px }
+    .hero .kicker{font-size:13px;color:var(--muted);margin-bottom:8px}
+    .hero h1{font-size:44px;line-height:1.02;margin:8px 0 12px;font-weight:800;color:#f8fafc}
+    .hero h1 .accent{color:var(--accent)}
+    .hero p{max-width:840px;margin:0 auto;font-size:16px;color:var(--muted)}
+    .hero .cta{display:flex;gap:12px;justify-content:center;margin-top:24px}
+
+/* ---------- FEATURES GRID ---------- */
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:36px;align-items:stretch}
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;padding:22px;border:1px solid var(--glass-border);
+      box-shadow:var(--soft-shadow);transition:transform 240ms var(--ease),box-shadow 240ms var(--ease);
+      display:flex;flex-direction:column;align-items:center;text-align:center;min-height:160px
+    }
+    .card .icon{width:56px;height:56px;border-radius:10px;display:grid;place-items:center;margin-bottom:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03)}
+    .card h3{font-size:18px;margin-bottom:6px;color:#fff}
+    .card p{font-size:14px;color:var(--muted);max-width:280px}
+    .card:hover{transform:translateY(-10px);box-shadow:0 24px 60px rgba(2,6,23,0.72),0 0 40px rgba(59,130,246,0.12);border-color:rgba(59,130,246,0.18)}
+    .card:focus{outline:2px solid rgba(59,130,246,0.12);outline-offset:4px}
+
+/* ---------- SECURITY + MOCK ---------- */
+    .security{margin-top:34px;padding:20px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));display:flex;gap:18px;align-items:center;border:1px solid rgba(255,255,255,0.02)}
+    .security .badge{width:56px;height:56px;border-radius:10px;display:grid;place-items:center;background:rgba(99,102,241,0.06);font-size:22px}
+    .visual{margin-top:36px;display:grid;grid-template-columns:1fr;place-items:center}
+    .mock{width:100%;max-width:980px;border-radius:14px;padding:18px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);box-shadow:0 30px 80px rgba(2,6,23,0.7);overflow:hidden}
+    .mock .screenshot{width:100%;height:auto;border-radius:10px;display:block;border:1px solid rgba(255,255,255,0.03)}
+
+/* ---------- FOOTER ---------- */
+    .footer{margin-top:44px;text-align:center;color:var(--muted);font-size:13px}
+
+/* ---------- MODAL (centered + accessible) ---------- */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background:rgba(2,6,23,0.6);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:1000;
+      padding:20px;
+      backdrop-filter: blur(6px) saturate(120%);
+    }
+    .modal-backdrop.active{display:flex}
+    .modal{
+      width:100%;
+      max-width:520px;
+      background:var(--card);
+      border-radius:14px;
+      padding:22px;
+      border:1px solid var(--glass-border);
+      box-shadow:0 30px 80px rgba(2,6,23,0.8);
+      transform:scale(0.94);
+      opacity:0;
+      transition:transform 300ms var(--ease),opacity 260ms var(--ease);
+    }
+    .modal.show{transform:scale(1);opacity:1}
+    .modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+    .modal-title{font-size:20px;font-weight:700}
+    .modal-close{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
+    .modal-body{margin-top:8px}
+    .field{margin-bottom:12px}
+    label{display:block;margin-bottom:6px;font-size:13px;color:#d7e2ee}
+    input[type="text"],input[type="email"],input[type="password"]{
+      width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:#0d1625;color:#fff;outline:none;font-size:15px
+    }
+    input:focus{border-color:var(--accent);box-shadow:0 6px 20px rgba(59,130,246,0.10)}
+    .modal-actions{display:flex;gap:10px;margin-top:12px;align-items:center}
+    .btn.flat{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:9px 12px;border-radius:8px;cursor:pointer}
+    .home-btn{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:8px 10px;border-radius:8px}
+
+/* small helpers */
+    .muted{color:var(--muted);font-size:14px}
+    .center{text-align:center}
+    @media (max-width:980px){ .grid{grid-template-columns:repeat(2,1fr)} .hero h1{font-size:40px} }
+    @media (max-width:700px){ .container{padding:0 12px} .grid{grid-template-columns:1fr} .hero h1{font-size:30px} .navbar{padding:8px} .brand .title{font-size:15px} }
+  </style>
+</head>
+<body>
+  <div class="container" id="page-root" tabindex="-1">
+    <header class="navbar" role="navigation" aria-label="Main navigation">
+      <div class="brand" aria-hidden="false">
+        <div class="logo-wrap" aria-hidden="true">
+          <!-- use your uploaded screenshot file as small logo -->
+          <img src="1.png" alt="logo" style="width:28px;height:28px;object-fit:cover">
+        </div>
+        <div>
+          <div class="title">TimeTrack Pro</div>
+          <div style="font-size:12px;color:var(--muted)">Modern Employee Time Management</div>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <button class="btn ghost small" id="open-login">Log in</button>
+        <button class="btn primary small" id="open-signup">Get Started</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-heading">
+        <div class="kicker">Modern Employee</div>
+        <h1 id="hero-heading">Modern Employee <span class="accent">Time Management</span></h1>
+        <p>Streamline attendance tracking, manage shifts, and gain insights into workforce productivity with our intuitive platform.</p>
+
+        <div class="cta">
+          <button class="btn primary big" id="hero-signup">Get Started</button>
+          <button class="btn ghost big" id="hero-login">Login</button>
+        </div>
+      </section>
+
+      <section class="grid" aria-label="Features">
+        <article class="card" tabindex="0" aria-labelledby="f1">
+          <div class="icon">⏱</div>
+          <h3 id="f1">Smart Tracking</h3>
+          <p>Automatic clock-in/out with break time management and accurate hour calculations.</p>
+        </article>
+
+        <article class="card" tabindex="0" aria-labelledby="f2">
+          <div class="icon">👥</div>
+          <h3 id="f2">Team Management</h3>
+          <p>Admin dashboard to monitor all employees, edit records, and manage schedules.</p>
+        </article>
+
+        <article class="card" tabindex="0" aria-labelledby="f3">
+          <div class="icon">📈</div>
+          <h3 id="f3">Real-time Insights</h3>
+          <p>Live dashboards with analytics, reports, and attendance trends at your fingertips.</p>
+        </article>
+      </section>
+
+      <section class="security" role="region" aria-label="Security">
+        <div class="left">
+          <div class="badge">🛡</div>
+          <div>
+            <h4>Enterprise-Grade Security</h4>
+            <p class="muted">Role-based access control, secure authentication, and encrypted data storage ensure your workforce data stays protected.</p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="footer">
+      <div>© <span id="year"></span> TimeTrack Pro — Built to track and empower teams</div>
+    </footer>
+  </div>
+
+  <!-- ---------- MODALS (shared backdrop) ---------- -->
+  <div class="modal-backdrop" id="modal-root" aria-hidden="true" role="dialog" aria-modal="true">
+    <!-- LOGIN -->
+    <div class="modal" id="login-modal" role="document" aria-labelledby="login-title" tabindex="-1">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title" id="login-title">Log in</div>
+          <div class="muted" style="font-size:13px">Welcome back to TimeTrack Pro</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="home-btn" data-action="home">🏠 Home</button>
+          <button class="modal-close" data-action="close" aria-label="Close login modal">✕</button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <form id="login-form" autocomplete="on">
+          <div class="field">
+            <label for="login-email">Email</label>
+            <input id="login-email" type="email" required placeholder="you@company.com" />
+          </div>
+          <div class="field">
+            <label for="login-pass">Password</label>
+            <input id="login-pass" type="password" required placeholder="Enter your password" />
+          </div>
+
+          <div class="modal-actions">
+            <button type="submit" class="btn primary">Log In</button>
+            <button type="button" class="btn flat" id="to-signup">Create account</button>
+          </div>
+        </form>
+
+        <div style="margin-top:12px;font-size:13px;color:var(--muted)">
+          Forgot password? <a href="#" id="forgot">Reset</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIGNUP -->
+    <div class="modal" id="signup-modal" role="document" aria-labelledby="signup-title" tabindex="-1">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title" id="signup-title">Create account</div>
+          <div class="muted" style="font-size:13px">Join TimeTrack Pro to manage time smarter</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="home-btn" data-action="home">🏠 Home</button>
+          <button class="modal-close" data-action="close" aria-label="Close signup modal">✕</button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <form id="signup-form" autocomplete="on">
+          <div class="field">
+            <label for="signup-name">Full name</label>
+            <input id="signup-name" type="text" required placeholder="Your name" />
+          </div>
+          <div class="field">
+            <label for="signup-email">Email</label>
+            <input id="signup-email" type="email" required placeholder="you@company.com" />
+          </div>
+          <div class="field">
+            <label for="signup-pass">Password</label>
+            <input id="signup-pass" type="password" required placeholder="Create a password" />
+          </div>
+
+          <div class="modal-actions">
+            <button type="submit" class="btn primary">Sign up</button>
+            <button type="button" class="btn flat" id="to-login">Already have an account</button>
+          </div>
+        </form>
+
+        <div style="margin-top:12px;font-size:13px;color:var(--muted)">
+          By creating an account you agree to our <a href="#" style="color:var(--accent-2)">terms</a>.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Elements & state ---
+    const modalRoot = document.getElementById('modal-root');
+    const loginModal = document.getElementById('login-modal');
+    const signupModal = document.getElementById('signup-modal');
+    const openLoginBtns = [...document.querySelectorAll('#open-login, #hero-login')];
+    const openSignupBtns = [...document.querySelectorAll('#open-signup, #hero-signup')];
+    const toSignupBtn = document.getElementById('to-signup');
+    const toLoginBtn = document.getElementById('to-login');
+    const yearEl = document.getElementById('year');
+
+    let activeModal = null;
+    let focusedBeforeModal = null;
+
+    // show current year
+    yearEl.textContent = new Date().getFullYear();
+
+    // -------------------------------
+    // LocalStorage "backend" helpers
+    // -------------------------------
+    function getUsers() {
+      try {
+        return JSON.parse(localStorage.getItem('users') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+    function saveUsers(users) {
+      localStorage.setItem('users', JSON.stringify(users));
+    }
+    function saveUser(user) {
+      const users = getUsers();
+      users.push(user);
+      saveUsers(users);
+    }
+    function emailExists(email) {
+      const users = getUsers();
+      return users.some(u => u.email.toLowerCase() === email.toLowerCase());
+    }
+    function findUser(email, pass) {
+      const users = getUsers();
+      return users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === pass);
+    }
+
+    // store active session
+    function setActiveUser(user) {
+      localStorage.setItem('activeUser', JSON.stringify(user));
+    }
+    function getActiveUser() {
+      try { return JSON.parse(localStorage.getItem('activeUser')); } catch(e){ return null; }
+    }
+
+    // focus trap utility
+    function trapFocus(modal) {
+      const focusable = modal.querySelectorAll('a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])');
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      function handle(e) {
+        if (e.key !== 'Tab') return;
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+      modal.addEventListener('keydown', handle);
+      return () => modal.removeEventListener('keydown', handle);
+    }
+
+    // open modal centered and accessible
+    function openModal(which) {
+      if (activeModal) closeModal(activeModal);
+      focusedBeforeModal = document.activeElement;
+      modalRoot.classList.add('active');
+      modalRoot.setAttribute('aria-hidden', 'false');
+
+      activeModal = which === 'login' ? loginModal : signupModal;
+      activeModal.classList.add('show');
+      activeModal.setAttribute('aria-hidden', 'false');
+      activeModal.focus();
+
+      // smoothness: ensure CSS transition applies
+      setTimeout(()=> { activeModal.classList.add('visible'); }, 10);
+
+      activeModal._removeTrap = trapFocus(activeModal);
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(modalEl) {
+      if (!modalEl) return;
+      modalEl.classList.remove('show','visible');
+      modalEl.setAttribute('aria-hidden', 'true');
+
+      // remove focus trap after animation
+      setTimeout(()=> {
+        modalRoot.classList.remove('active');
+        modalRoot.setAttribute('aria-hidden','true');
+        if (modalEl._removeTrap) modalEl._removeTrap();
+        activeModal = null;
+        if (focusedBeforeModal && typeof focusedBeforeModal.focus === 'function') focusedBeforeModal.focus();
+        document.body.style.overflow = '';
+      }, 240);
+    }
+
+    // wire up open buttons
+    openLoginBtns.forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); openModal('login'); }));
+    openSignupBtns.forEach(btn => btn.addEventListener('click', (e) => { e.preventDefault(); openModal('signup'); }));
+
+    // close buttons and home/back
+    document.querySelectorAll('.modal-close').forEach(b => b.addEventListener('click', (e) => {
+      const modal = e.currentTarget.closest('.modal');
+      closeModal(modal);
+    }));
+    document.querySelectorAll('.home-btn').forEach(b => b.addEventListener('click', () => {
+      closeModal(activeModal);
+      document.getElementById('page-root').focus();
+    }));
+
+    // switch modals inside
+    toSignupBtn.addEventListener('click', (e)=> { openModal('signup'); });
+    toLoginBtn.addEventListener('click', (e)=> { openModal('login'); });
+
+    // backdrop click closes modal (if clicking outside)
+    modalRoot.addEventListener('click', (e) => {
+      if (e.target === modalRoot) closeModal(activeModal);
+    });
+
+    // keyboard: Esc closes, Ctrl/Cmd+G/L open
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && activeModal) closeModal(activeModal);
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g') openModal('signup');
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') openModal('login');
+    });
+
+    // --------------------------
+    // FORM HANDLERS (LocalStorage)
+    // --------------------------
+    document.getElementById('signup-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('signup-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const pass = document.getElementById('signup-pass').value;
+
+      if (!name || !email || !pass) {
+        alert('Please fill all fields.');
+        return;
+      }
+
+      if (emailExists(email)) {
+        alert('This email is already registered. Please log in or use another email.');
+        return;
+      }
+
+      // Save user (simple object). You can extend with more fields.
+      const user = { name, email, password: pass };
+      saveUser(user);
+
+      // close modal and inform user
+      closeModal(activeModal);
+      alert('Account created for ' + name + '. You can now log in.');
+
+      // optional: pre-fill login form with email
+      setTimeout(()=> {
+        document.getElementById('login-email').value = email;
+        document.getElementById('login-pass').value = '';
+        openModal('login');
+      }, 200);
+    });
+
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const pass = document.getElementById('login-pass').value;
+
+      if (!email || !pass) {
+        alert('Please enter email and password.');
+        return;
+      }
+
+      const user = findUser(email, pass);
+      if (!user) {
+        alert('Invalid email or password.');
+        return;
+      }
+
+      // Save active session and redirect to profile page
+      setActiveUser(user);
+      closeModal(activeModal);
+      // small delay to let modal close animation run
+      setTimeout(()=> { window.location.href = 'profile.html'; }, 180);
+    });
+
+    // helper to precreate a demo user if none exist (optional)
+    (function ensureDemoUser(){
+      const users = getUsers();
+      if (!users.length) {
+        // Uncomment next line to auto-create a demo account (email: demo@demo.com / pass: demo123)
+        // saveUser({ name: 'Demo User', email:'demo@demo.com', password:'demo123' });
+      }
+    })();
+
+    // add small hover glow for cards
+    document.querySelectorAll('.card').forEach(c => {
+      c.addEventListener('mouseenter', () => c.style.boxShadow = '0 28px 80px rgba(2,6,23,0.78), 0 0 46px rgba(59,130,246,0.14)');
+      c.addEventListener('mouseleave', () => c.style.boxShadow = '');
+    });
+
+    // make modals focusable for screen readers
+    loginModal.setAttribute('tabindex','-1');
+    signupModal.setAttribute('tabindex','-1');
+  </script>
+</body>
+</html>

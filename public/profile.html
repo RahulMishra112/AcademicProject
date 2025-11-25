@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TimeTrack Pro — Full Tracker (Pause/Resume Break)</title>
+
+  <!-- Chart.js for simple charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    /* ==========================
+       Dark Theme & Global Styles
+       ========================== */
+    :root{
+      --bg:#07101a;
+      --panel:#0f1721;
+      --muted:#94a3b8;
+      --accent:#3b82f6;
+      --accent-2:#60a5fa;
+      --accent-3:#8b5cf6;
+      --success:#22c55e;
+      --danger:#ef4444;
+      --glass: rgba(255,255,255,0.025);
+      --card-border: rgba(255,255,255,0.03);
+      --text:#e6eef7;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue";
+      background: linear-gradient(180deg,var(--bg), #03101a);
+      color:var(--text);
+      padding:18px;
+    }
+
+    a{color:inherit;text-decoration:none}
+
+    /* Container */
+    .wrapper{
+      max-width:1200px;
+      margin:0 auto;
+    }
+
+    header.top{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      padding:14px 18px;
+      margin-bottom:18px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:12px;
+      border:1px solid var(--card-border);
+      box-shadow:0 12px 40px rgba(0,0,0,0.5);
+    }
+
+    header .left h1{font-size:20px;margin-bottom:4px}
+    header .left p{color:var(--muted);font-size:13px}
+
+    .btn {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:10px;
+      font-weight:600;
+      border:1px solid rgba(255,255,255,0.04);
+      cursor:pointer;
+      background:transparent;
+      color:var(--text);
+    }
+
+    .btn.primary {
+      background: linear-gradient(90deg,var(--accent),var(--accent-2));
+      border:none;
+      color:white;
+    }
+
+    .btn.ghost {
+      background: transparent;
+      border:1px solid rgba(255,255,255,0.03);
+      color:var(--muted);
+    }
+
+    /* Top Grid */
+    .top-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:18px;
+      margin-bottom:18px;
+    }
+
+    .card{
+      background:var(--panel);
+      padding:18px;
+      border-radius:12px;
+      border:1px solid var(--card-border);
+      box-shadow:0 22px 60px rgba(0,0,0,0.6);
+    }
+
+    .card .label{color:var(--muted);font-size:13px;margin-bottom:6px}
+    .card .value{font-size:28px;font-weight:700;color:var(--accent)}
+    .card .small{color:var(--text);font-size:16px}
+
+    .status {
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .dot{width:12px;height:12px;border-radius:50%}
+    .dot.active{background:var(--success)}
+    .dot.inactive{background:var(--muted)}
+    .dot.paused{background:#f59e0b} /* orange for paused */
+
+    /* Actions Area */
+    .actions{
+      margin:18px 0;
+      display:grid;
+      grid-template-columns: 1fr 320px;
+      gap:18px;
+    }
+
+    .controls{
+      padding:18px;
+      border-radius:12px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+      border:1px solid var(--card-border);
+    }
+
+    .controls .big-btn{
+      display:flex;
+      gap:12px;
+      margin-bottom:12px;
+    }
+
+    .big-btn .btn{
+      flex:1;
+      padding:16px;
+      justify-content:center;
+      font-size:16px;
+    }
+
+    .small-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    /* Right panel (summary + chart) */
+    .summary{
+      padding:18px;
+      border-radius:12px;
+    }
+
+    .summary .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .muted{color:var(--muted);font-size:13px}
+
+    /* logs listing */
+    .logs{
+      margin-top:18px;
+      border-radius:12px;
+      overflow:hidden;
+      border:1px solid var(--card-border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+    }
+
+    .logs table{width:100%;border-collapse:collapse}
+    .logs th, .logs td{
+      padding:10px 12px;
+      text-align:left;
+      font-size:14px;
+      border-bottom:1px solid rgba(255,255,255,0.02);
+      color:var(--text);
+    }
+    .logs tr:hover{background: rgba(255,255,255,0.01)}
+
+    .logs th{color:var(--muted);font-weight:600;font-size:12px}
+
+    .action-icon{
+      padding:6px 8px;border-radius:6px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02);cursor:pointer;color:var(--muted)
+    }
+
+    /* responsive */
+    @media (max-width: 920px){
+      .top-grid{grid-template-columns:repeat(1,1fr)}
+      .actions{grid-template-columns:1fr}
+    }
+
+    /* footer summary controls */
+    .footer-controls{display:flex;gap:10px;align-items:center;margin-top:12px}
+    .small{font-size:13px;color:var(--muted)}
+    .chip{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03);font-weight:600;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+
+    <!-- header -->
+    <header class="top">
+      <div class="left">
+        <h1>Time Management</h1>
+        <p id="welcomeText">Welcome, User</p>
+      </div>
+      <div class="right">
+        <button class="btn ghost" id="downloadCsv">Export CSV</button>
+        <button class="btn ghost" id="clearAll">Clear All</button>
+        <button class="btn" id="logout">Logout</button>
+      </div>
+    </header>
+
+    <!-- top cards -->
+    <div class="top-grid">
+      <div class="card">
+        <div class="label">Today's Hours</div>
+        <div class="value" id="todayHours">0.00h</div>
+        <div class="muted" id="todayHoursDetail">total work time</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Status</div>
+        <div class="status" id="statusBox">
+          <div class="dot inactive" id="statusDot"></div>
+          <div class="small" id="statusLabel">Not Clocked In</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">Current Session</div>
+        <div class="small" id="sessionType">—</div>
+        <div class="muted" id="sessionSince">—</div>
+      </div>
+    </div>
+
+    <!-- main actions and summary -->
+    <div class="actions">
+      <!-- controls -->
+      <div class="controls card">
+        <div style="margin-bottom:12px">
+          <div class="muted">Current Timer</div>
+          <div style="font-size:28px;font-weight:700;margin-top:6px" id="timerDisplay">00:00:00</div>
+        </div>
+
+        <div class="big-btn">
+          <button class="btn primary" id="startWork">⏺ Start Work</button>
+          <button class="btn" id="startBreak">☕ Start Break</button>
+          <button class="btn ghost" id="stopSession">⏹ Stop</button>
+        </div>
+
+        <div class="small-actions" style="margin-top:8px">
+          <button class="btn ghost" id="addManual">+ Manual Entry</button>
+          <button class="btn ghost" id="markPause">Insert Quick Break</button>
+        </div>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.02);margin:14px 0">
+
+        <div>
+          <div class="muted">Quick Summary</div>
+          <div style="display:flex;gap:12px;margin-top:8px">
+            <div class="chip" id="totalWorkChip">Work 0h</div>
+            <div class="chip" id="totalBreakChip">Break 0h</div>
+            <div class="chip" id="weekChip">This week: 0h</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label class="muted">Filter</label>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn ghost" data-filter="all">All</button>
+            <button class="btn ghost" data-filter="Work">Work</button>
+            <button class="btn ghost" data-filter="Break">Break</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- summary / chart -->
+      <div class="summary card">
+        <div class="row">
+          <div>
+            <div class="muted">Weekly Overview</div>
+            <div style="font-weight:700;font-size:20px" id="weekTotal">0.00h</div>
+          </div>
+          <div>
+            <div class="muted">Active Sessions</div>
+            <div style="font-weight:700;font-size:20px" id="activeCount">0</div>
+          </div>
+        </div>
+
+        <canvas id="weekChart" style="height:180px;margin-top:12px"></canvas>
+
+        <div class="footer-controls">
+          <div class="small">Timezone: <strong id="tzLabel"></strong></div>
+          <div style="flex:1"></div>
+          <button class="btn ghost" id="clearWeek">Clear Week</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- logs table -->
+    <div class="logs card" style="margin-top:18px">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Duration</th>
+            <th>Note</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="logsTbody">
+          <!-- rows populated by JS -->
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+<script>
+/*
+  Full Dashboard JS (updated pause/resume on break)
+  - localStorage based backend
+  - track sessions (Work/Break)
+  - pause/resume behavior: break toggles pause of active session (works as requested)
+  - stop session => save log (subtract paused time)
+  - day-wise listing
+  - weekly aggregation
+  - export CSV, clear, manual entry, edit, delete
+*/
+
+// --------- Utilities ----------
+function uid(len=8){
+  const a = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let s=''; for(let i=0;i<len;i++) s+=a[Math.floor(Math.random()*a.length)];
+  return s;
+}
+function formatTime(ms){
+  const total = Math.floor(ms/1000);
+  const h = Math.floor(total/3600), m = Math.floor((total%3600)/60), s = total%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+function formatDateISO(d){ // YYYY-MM-DD
+  const dt = new Date(d);
+  return dt.toISOString().slice(0,10);
+}
+function formatDateNice(d){
+  const dt = new Date(d);
+  return dt.toLocaleString();
+}
+function parseTimeToMs(hms){
+  const parts = hms.split(':').map(p=>parseInt(p||0,10));
+  return (parts[0]*3600+parts[1]*60+parts[2])*1000;
+}
+
+// --------- Storage ----------
+const STORAGE_KEYS = {
+  LOGS: 'time_logs_v2',
+  ACTIVE: 'active_session_v2',
+  USER: 'activeUser'
+};
+
+function getLogs(){
+  try{ return JSON.parse(localStorage.getItem(STORAGE_KEYS.LOGS) || '[]'); }catch(e){return [];}
+}
+function saveLogs(logs){ localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(logs)); }
+function getActiveSession(){ try{return JSON.parse(localStorage.getItem(STORAGE_KEYS.ACTIVE))}catch(e){return null} }
+function setActiveSession(s){ localStorage.setItem(STORAGE_KEYS.ACTIVE, JSON.stringify(s)); }
+function clearActiveSession(){ localStorage.removeItem(STORAGE_KEYS.ACTIVE); }
+
+// --------- Session / Timer State ----------
+let timerInterval = null;
+let sessionStartTs = null;
+let sessionType = null; // "Work" or "Break"
+let sessionNote = '';
+let user = null;
+
+// DOM references
+const welcomeText = document.getElementById('welcomeText');
+const timerDisplay = document.getElementById('timerDisplay');
+const statusDot = document.getElementById('statusDot');
+const statusLabel = document.getElementById('statusLabel');
+const sessionTypeEl = document.getElementById('sessionType');
+const sessionSinceEl = document.getElementById('sessionSince');
+const todayHoursEl = document.getElementById('todayHours');
+const todayHoursDetail = document.getElementById('todayHoursDetail');
+const weekTotalEl = document.getElementById('weekTotal');
+const activeCountEl = document.getElementById('activeCount');
+const totalWorkChip = document.getElementById('totalWorkChip');
+const totalBreakChip = document.getElementById('totalBreakChip');
+const weekChip = document.getElementById('weekChip');
+const logsTbody = document.getElementById('logsTbody');
+const tzLabel = document.getElementById('tzLabel');
+tzLabel.textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local';
+
+// buttons
+const startWorkBtn = document.getElementById('startWork');
+const startBreakBtn = document.getElementById('startBreak');
+const stopSessionBtn = document.getElementById('stopSession');
+const addManualBtn = document.getElementById('addManual');
+const downloadCsvBtn = document.getElementById('downloadCsv');
+const clearAllBtn = document.getElementById('clearAll');
+const logoutBtn = document.getElementById('logout');
+const clearWeekBtn = document.getElementById('clearWeek');
+
+// Chart setup
+let weekChart = null;
+function initChart(labels, data){
+  const ctx = document.getElementById('weekChart').getContext('2d');
+  if(weekChart) weekChart.destroy();
+  weekChart = new Chart(ctx, {
+    type:'bar',
+    data:{labels, datasets:[{label:'Work hours (h)', data, backgroundColor: 'rgba(59,130,246,0.7)'}]},
+    options:{scales:{y:{beginAtZero:true}},plugins:{legend:{display:false}}}
+  });
+}
+
+// --------- Authentication check (local activeUser) ----------
+function loadUser(){
+  try{
+    user = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER));
+  }catch(e){ user = null; }
+  if(!user){
+    // if no user, create demo user as fallback
+    user = {name:'Demo User', email:'demo@local', id:'demo'};
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+  }
+  welcomeText.textContent = `Welcome, ${user.name}`;
+}
+loadUser();
+
+// --------- Rendering logs & summary ----------
+function buildLogsTable(filter='all'){
+  const logs = getLogs();
+  let filtered = logs;
+  if(filter !== 'all') filtered = logs.filter(l=>l.type === filter);
+  logsTbody.innerHTML = '';
+  filtered.sort((a,b)=>new Date(b.start)-new Date(a.start));
+  filtered.forEach(log=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${formatDateISO(log.start)}</td>
+      <td>${log.type}</td>
+      <td>${new Date(log.start).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
+      <td>${log.end ? new Date(log.end).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '—'}</td>
+      <td>${log.durationStr || (log.durationMs?formatTime(log.durationMs):'—')}</td>
+      <td>${log.note || ''}</td>
+      <td>
+        <button class="action-icon" data-id="${log.id}" data-action="edit">✎</button>
+        <button class="action-icon" data-id="${log.id}" data-action="delete">🗑</button>
+      </td>`;
+    logsTbody.appendChild(tr);
+  });
+  attachRowActions();
+}
+
+function attachRowActions(){
+  document.querySelectorAll('.action-icon').forEach(btn=>{
+    btn.onclick = (ev)=>{
+      const id = btn.getAttribute('data-id');
+      const action = btn.getAttribute('data-action');
+      if(action==='delete') deleteLog(id);
+      if(action==='edit') editLog(id);
+    };
+  });
+}
+
+function recalcSummary(){
+  const logs = getLogs();
+  const today = new Date(); today.setHours(0,0,0,0);
+  let todayMs = 0, workMs = 0, breakMs = 0;
+  const weekStart = (()=>{
+    const d = new Date();
+    const day = d.getDay(); // 0 Sun
+    const diff = d.getDate() - day + (day===0?-6:1); // Monday start
+    const s = new Date(); s.setDate(diff); s.setHours(0,0,0,0);
+    return s;
+  })();
+
+  let weekMs = 0, activeCount=0;
+  logs.forEach(l=>{
+    if(l.type==='Work') workMs += (l.durationMs||0);
+    if(l.type==='Break') breakMs += (l.durationMs||0);
+    const s = new Date(l.start);
+    if(s>=today) todayMs += (l.durationMs||0);
+    if(new Date(l.start) >= weekStart) weekMs += (l.durationMs||0);
+    if(!l.end) activeCount++;
+  });
+
+  // update UI chips
+  totalWorkChip.textContent = `Work ${ (workMs/3600000).toFixed(2) }h`;
+  totalBreakChip.textContent = `Break ${ (breakMs/3600000).toFixed(2) }h`;
+  weekChip.textContent = `This week: ${ (weekMs/3600000).toFixed(2) }h`;
+  todayHoursEl.textContent = `${ (todayMs/3600000).toFixed(2) }h`;
+  weekTotalEl.textContent = `${ (weekMs/3600000).toFixed(2) }h`;
+  activeCountEl.textContent = `${activeCount}`;
+  // build chart data for last 7 days
+  const labels = [], data=[];
+  for(let i=6;i>=0;i--){
+    const d = new Date(); d.setDate(d.getDate()-i); d.setHours(0,0,0,0);
+    const dateStr = formatDateISO(d);
+    labels.push(dateStr.slice(5)); // mm-dd
+    const dayMs = logs.reduce((acc,l)=>{
+      const st = new Date(l.start);
+      if(formatDateISO(st) === dateStr) return acc + (l.durationMs||0);
+      return acc;
+    },0);
+    data.push( +(dayMs/3600000).toFixed(2) );
+  }
+  initChart(labels, data);
+}
+
+function refreshAll(){
+  buildLogsTable();
+  recalcSummary();
+  restoreActiveSessionUI();
+}
+
+refreshAll();
+
+// --------- Active session handling (with pause support) ----------
+/*
+  Active session structure:
+  {
+    id, type, start, note,
+    paused: { accumMs: 0, pauseStart: null }  // accumMs: total paused ms so far
+  }
+*/
+function restoreActiveSessionUI(){
+  const a = getActiveSession();
+  if(a && a.start){
+    // active session exists
+    sessionStartTs = new Date(a.start).getTime();
+    sessionType = a.type;
+    sessionNote = a.note||'';
+    // if currently paused (pauseStart present), don't start interval
+    if(a.paused && a.paused.pauseStart){
+      // paused state
+      updatePausedUI(true, a);
+    } else {
+      // running state
+      startTimerInterval();
+      updatePausedUI(false, a);
+    }
+  } else {
+    updatePausedUI(false, null);
+  }
+}
+
+function updatePausedUI(isPaused, activeObj){
+  // update UI depending on active session or paused state
+  if(activeObj && activeObj.start){
+    // there is an active session (either running or paused)
+    sessionTypeEl.textContent = activeObj.type || '—';
+    sessionSinceEl.textContent = `since ${ new Date(activeObj.start).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) }`;
+    if(isPaused){
+      statusDot.classList.remove('active'); statusDot.classList.add('paused');
+      statusLabel.textContent = 'Paused';
+      // set timer display to last shown value (we'll compute elapsed excluding paused)
+      const accumMs = activeObj.paused?.accumMs || 0;
+      const now = activeObj.paused.pauseStart ? new Date(activeObj.paused.pauseStart).getTime() : Date.now();
+      const elapsed = now - new Date(activeObj.start).getTime() - accumMs;
+      timerDisplay.textContent = formatTime(elapsed);
+      // change startBreak button text to "Resume"
+      startBreakBtn.textContent = '▶ Resume';
+      startBreakBtn.dataset.state = 'resume';
+    } else {
+      statusDot.classList.remove('paused'); statusDot.classList.add('active');
+      statusLabel.textContent = 'Active';
+      // set startBreak button to "Pause (Break)"
+      startBreakBtn.textContent = '☕ Start Break';
+      startBreakBtn.dataset.state = 'pause';
+    }
+  } else {
+    // no active session
+    statusDot.classList.remove('active'); statusDot.classList.remove('paused'); statusDot.classList.add('inactive');
+    statusLabel.textContent = 'Not Clocked In';
+    sessionTypeEl.textContent = '—';
+    sessionSinceEl.textContent = '—';
+    timerDisplay.textContent = '00:00:00';
+    startBreakBtn.textContent = '☕ Start Break';
+    startBreakBtn.dataset.state = 'pause';
+  }
+}
+
+function startTimerInterval(){
+  if(timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    const active = getActiveSession();
+    if(!active) return;
+    // compute elapsed excluding accumulated paused ms
+    const startTs = new Date(active.start).getTime();
+    const pausedAccum = active.paused?.accumMs || 0;
+    // if currently paused there is a pauseStart; don't run interval in that case
+    if(active.paused && active.paused.pauseStart){
+      // paused - should not be updating; interval can still compute static value
+      const now = new Date(active.paused.pauseStart).getTime();
+      const elapsed = now - startTs - pausedAccum;
+      timerDisplay.textContent = formatTime(elapsed);
+      return;
+    } else {
+      const now = Date.now();
+      const elapsed = now - startTs - pausedAccum;
+      timerDisplay.textContent = formatTime(elapsed);
+    }
+  }, 1000);
+}
+
+// --------- Buttons logic ----------
+startWorkBtn.addEventListener('click', ()=>{
+  beginSession('Work');
+});
+startBreakBtn.addEventListener('click', ()=>{
+  // If there's no active session, start a Break session normally (user wanted a Break session)
+  // If there is an active session, we interpret Start Break as "pause active session" (toggle pause/resume)
+  const active = getActiveSession();
+  if(!active || !active.start){
+    // No active session -> start a Break session (new)
+    beginSession('Break');
+  } else {
+    // Active session exists -> toggle pause/resume on that session
+    togglePauseOnActive();
+  }
+});
+stopSessionBtn.addEventListener('click', stopSession);
+
+function beginSession(type){
+  // if there's an active session, prompt to stop first (except if it's paused and user wants to start a new type explicitly)
+  const active = getActiveSession();
+  if(active && active.start){
+    if(active.type === type){
+      // same type running -> nothing to do
+      alert(`${type} session already running.`);
+      return;
+    }
+    if(!confirm('A session is already running. Stop it and start new?')) return;
+    stopSession(); // will save previous
+  }
+  // create a fresh active session with paused structure
+  const activeObj = {
+    id: uid(12),
+    type,
+    start: new Date().toISOString(),
+    note: '',
+    paused: { accumMs: 0, pauseStart: null }
+  };
+  setActiveSession(activeObj);
+  sessionStartTs = new Date(activeObj.start).getTime();
+  sessionType = type;
+  startTimerInterval();
+  updatePausedUI(false, activeObj);
+  refreshAll();
+}
+
+function togglePauseOnActive(){
+  const active = getActiveSession();
+  if(!active || !active.start){
+    alert('No active session to pause/resume.');
+    return;
+  }
+  // If currently paused (pauseStart not null) -> resume
+  if(active.paused && active.paused.pauseStart){
+    // resume
+    const pauseStart = new Date(active.paused.pauseStart).getTime();
+    const pauseDuration = Date.now() - pauseStart;
+    active.paused.accumMs = (active.paused.accumMs || 0) + pauseDuration;
+    active.paused.pauseStart = null;
+    setActiveSession(active);
+    // restart timer interval
+    startTimerInterval();
+    updatePausedUI(false, active);
+    refreshAll();
+  } else {
+    // pause now
+    active.paused = active.paused || {accumMs:0, pauseStart:null};
+    active.paused.pauseStart = new Date().toISOString();
+    setActiveSession(active);
+    // clear interval so timer stops updating (we still compute static value in UI)
+    if(timerInterval) clearInterval(timerInterval);
+    updatePausedUI(true, active);
+    refreshAll();
+  }
+}
+
+function stopSession(){
+  const active = getActiveSession();
+  if(!active || !active.start){ alert('No active session'); return; }
+  // compute end and total duration excluding paused accumulation
+  let start = new Date(active.start).getTime();
+  let pausedAccum = active.paused?.accumMs || 0;
+  // if currently paused, include the current pause period in pausedAccum
+  if(active.paused && active.paused.pauseStart){
+    pausedAccum += (Date.now() - new Date(active.paused.pauseStart).getTime());
+  }
+  const end = Date.now();
+  const durationMs = end - start - pausedAccum;
+  const log = {
+    id: active.id || uid(10),
+    type: active.type,
+    start: active.start,
+    end: new Date(end).toISOString(),
+    durationMs,
+    durationStr: formatTime(durationMs),
+    note: active.note || ''
+  };
+  const logs = getLogs();
+  logs.push(log);
+  saveLogs(logs);
+  clearActiveSession();
+  if(timerInterval) clearInterval(timerInterval);
+  sessionStartTs = null; sessionType = null; sessionNote = '';
+  updatePausedUI(false, null);
+  refreshAll();
+}
+
+// manual entry modal (simple prompt flow)
+addManualBtn.addEventListener('click', ()=>{
+  const type = prompt('Type (Work/Break)', 'Work');
+  if(!type) return;
+  const date = prompt('Date (YYYY-MM-DD)', formatDateISO(new Date()));
+  if(!date) return;
+  const start = prompt('Start time (HH:MM)', '09:00');
+  if(!start) return;
+  const end = prompt('End time (HH:MM)', '10:00');
+  if(!end) return;
+  // parse to full ISO
+  const startISO = new Date(`${date}T${start}:00`).toISOString();
+  const endISO = new Date(`${date}T${end}:00`).toISOString();
+  const durationMs = new Date(endISO).getTime() - new Date(startISO).getTime();
+  const note = prompt('Note (optional)', '') || '';
+  if(durationMs <= 0){ alert('End must be after start'); return; }
+  const logs = getLogs();
+  logs.push({id:uid(12), type, start: startISO, end: endISO, durationMs, durationStr: formatTime(durationMs), note});
+  saveLogs(logs);
+  refreshAll();
+});
+
+// markPause - quick small break insertion
+document.getElementById('markPause').addEventListener('click', ()=>{
+  const mins = parseInt(prompt('Pause duration in minutes', '15'),10);
+  if(!mins || mins<=0) return;
+  const end = Date.now();
+  const start = end - mins*60000;
+  const logs = getLogs();
+  logs.push({id:uid(8), type:'Break', start: new Date(start).toISOString(), end: new Date(end).toISOString(), durationMs: mins*60000, durationStr: formatTime(mins*60000), note:'Quick pause'});
+  saveLogs(logs);
+  refreshAll();
+});
+
+// --------- Edit / Delete log ----------
+function deleteLog(id){
+  if(!confirm('Delete this entry?')) return;
+  const logs = getLogs().filter(l=>l.id!==id);
+  saveLogs(logs); refreshAll();
+}
+function editLog(id){
+  const logs = getLogs();
+  const idx = logs.findIndex(l=>l.id===id);
+  if(idx===-1) return alert('Log not found');
+  const log = logs[idx];
+  const newNote = prompt('Edit note', log.note||'') || '';
+  const newStart = prompt('Start ISO/Datetime', log.start) || log.start;
+  const newEnd = prompt('End ISO/Datetime (leave blank if ongoing)', log.end||'') || log.end || null;
+  let newDurationMs = log.durationMs;
+  if(newStart && newEnd){
+    newDurationMs = new Date(newEnd).getTime() - new Date(newStart).getTime();
+    if(newDurationMs <= 0) return alert('Invalid times');
+  }
+  log.start = newStart;
+  log.end = newEnd;
+  log.durationMs = newDurationMs;
+  log.durationStr = newDurationMs ? formatTime(newDurationMs) : log.durationStr;
+  log.note = newNote;
+  logs[idx] = log;
+  saveLogs(logs);
+  refreshAll();
+}
+
+// --------- export CSV, clear
+downloadCsvBtn.addEventListener('click', ()=>{
+  const logs = getLogs();
+  if(!logs.length) return alert('No logs to export');
+  const csv = [
+    ['id','type','start','end','duration','note'],
+    ...logs.map(l=>[l.id,l.type,l.start,l.end,l.durationStr || (l.durationMs?formatTime(l.durationMs):''), (l.note||'')])
+  ].map(r => r.map(cell=>`"${String(cell||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download = `timelogs_${formatDateISO(new Date())}.csv`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+});
+
+clearAllBtn.addEventListener('click', ()=>{
+  if(!confirm('Clear ALL logs and active session?')) return;
+  saveLogs([]); clearActiveSession(); refreshAll();
+});
+
+// clear week
+clearWeekBtn.addEventListener('click', ()=>{
+  if(!confirm('Clear logs for this week only?')) return;
+  const logs = getLogs();
+  const weekStart = (()=>{
+    const d = new Date();
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day===0?-6:1);
+    const s = new Date(); s.setDate(diff); s.setHours(0,0,0,0);
+    return s;
+  })();
+  const kept = logs.filter(l=> new Date(l.start) < weekStart);
+  saveLogs(kept); refreshAll();
+});
+
+// logout
+logoutBtn.addEventListener('click', ()=>{
+  localStorage.removeItem(STORAGE_KEYS.USER);
+  alert('Logged out'); window.location.href = 'index.html';
+});
+
+// filter buttons
+document.querySelectorAll('[data-filter]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const f = btn.getAttribute('data-filter');
+    buildLogsTable(f);
+  });
+});
+
+// ---------- Active session persistence ----------
+window.addEventListener('beforeunload', ()=>{
+  // active session kept in localStorage automatically
+});
+
+// --------- initial rendering & restore active
+restoreActiveSessionUI();
+refreshAll();
+
+// Optional: expose functions for debugging
+window.__timeTracker = { getLogs, saveLogs, getActiveSession, setActiveSession, clearActiveSession };
+
+</script>
+</body>
+</html>
