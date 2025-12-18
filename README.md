@@ -1,50 +1,88 @@
-# Academic Project 🔥
+## 📖 Project Description
+This academic project demonstrates the implementation of a clean and responsive user interface using modern web technologies.  
+It focuses on proper file organization, reusable components, and beginner-friendly coding practices suitable for academic evaluation.
 
-This is a complete academic project built using **HTML**, **CSS**, and **JavaScript**.  
-The project focuses on clean structure, responsive design, and easy-to-understand code.
-
----
-
-
-
-## 📸 Project Preview
-
-
-![alt text](<images/Screenshot 2025-11-25 230226.png>)
-![alt text](<images/Screenshot 2025-11-25 231912.png>)
-![alt text](<images/Screenshot 2025-11-25 231923.png>)
-![alt text](<images/Screenshot 2025-11-25 231954.png>)
-![alt text](<images/Screenshot 2025-11-25 232019.png>)
+The project is designed to showcase:
+- Frontend structure and layout
+- Event handling using JavaScript
+- Responsive UI behavior
+- Clean and readable code
 
 ---
 
+## 🧠 Key Learning Outcomes
+- Understanding HTML page structure
+- Styling layouts using CSS
+- Handling events using JavaScript
+- Organizing files for a real-world project
+- Using GitHub for version control and submission
 
 ---
 
-## 🚀 Features
+## 🗂 Folder Structure
 
-- Clean & responsive design  
-- Modern UI components  
-- Simple and organized code  
-- Works on all major browsers  
-- Beginner-friendly project structure  
+
+AcademicProject/
+│── index.html → Main homepage
+│── profile.html → Profile / secondary page
+│── images/ → Screenshots and assets
+│── README.md → Project documentation
+
+## 💡 Innovative Features
+- Prevents invalid working hours
+- Secure token-based authentication
+- Auto calculation of total working minutes
+- CSV export for reporting
 
 ---
 
 ## 🛠️ Technologies Used
-
-- **HTML5**  
-- **CSS3**  
-- **JavaScript (ES6)**  
-- **VS Code**  
-- **Git & GitHub**
+- HTML5
+- CSS3
+- JavaScript (ES6)
+- Node.js
+- Express.js
+- MongoDB
+- JSON Web Tokens (JWT)
+- Git & GitHub
 
 ---
 
-## 📦 How to Run the Project
 
-### **Clone the repository**
-```sh
-git clone https://github.com/RahulMishra112/AcademicProject.git
+---
 
+## ⚙️ System Requirements
+- Any modern web browser (Chrome, Edge, Firefox)
+- No external libraries required
+- No server setup needed
 
+---
+
+## 🧪 Testing & Validation
+- All pages load without errors
+- Responsive design tested on different screen sizes
+- JavaScript events tested for proper functionality
+- Images and assets load correctly
+
+---
+
+## ✅ Evaluation Criteria Covered
+✔ Core feature implementation  
+✔ Event handling  
+✔ Clean UI design  
+✔ Code quality  
+✔ Documentation  
+✔ GitHub submission  
+
+---
+
+## ⏰ Submission Details
+- Project Type: Academic Web Project
+- Submission Mode: GitHub Repository
+- Status: Ready for Evaluation
+
+---
+
+## 👨‍💻 Author
+**Rahul Mishra**  
+Academic Project Submission  
