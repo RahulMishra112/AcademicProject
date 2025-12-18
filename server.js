@@ -1,45 +1,75 @@
+/**
+ * Employee Time Management System
+ * Backend Server
+ */
+
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
+const bodyParser = require("body-parser");
+const morgan = require("morgan");
+const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const asyncHandler = require("express-async-handler");
-require("dotenv").config();
+const bcrypt = require("bcryptjs");
 
-const app = express();
-app.use(express.json());
-
-
-const PORT = process.env.PORT || 3000;
-const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/etms";
-const JWT_SECRET = process.env.JWT_SECRET || "secret123";
+const APP_PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI;
+const JWT_SECRET = process.env.JWT_SECRET || "change_this_secret";
 const DEFAULT_ADMIN_PASS = process.env.DEFAULT_ADMIN_PASS || "admin123";
 
-
-mongoose
-  .connect(MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("DB connection error:", err));
+const app = express();
 
 
-const safeJson = (res, status, data) => {
-  return res.status(status).json(data);
-};
+app.use(cors());
+app.use(bodyParser.json({ limit: "5mb" }));
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(morgan("dev"));
 
-const UserSchema = ne
-
-  username: { type: String, unique: true, required: true },
-  passwordHash: { type: String, required: true },
-  role: { type: String, enum: ["admin", "manager"], default: "manager" },
+// Request time logger
+app.use((req, res, next) => {
+  req._startTime = Date.now();
+  res.on("finish", () => {
+    console.log(
+      `${req.method} ${req.originalUrl} ${res.statusCode} - ${Date.now() - req._startTime}ms`
+    );
+  });
+  next();
 });
 
+
+const nowUTC = () => new Date();
+const safeJson = (res, code, data) => res.status(code).json(data);
+
+const asyncHandler = (fn) => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
+const minutesBetween = (a, b) =>
+  Math.round((b.getTime() - a.getTime()) / 60000);
+
+
+
+mongoose.set("strictQuery", true);
+
+const UserSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  passwordHash: { type: String, required: true },
+  role: {
+    type: String,
+    enum: ["admin", "manager", "employee"],
+    default: "employee",
+  },
+  createdAt: { type: Date, default: nowUTC },
+});
 
 const EmployeeSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  email: String,
   department: String,
-  createdAt: { type: Date, default: Date.now },
+  position: String,
+  createdAt: { type: Date, default: nowUTC },
 });
-
 
 const TimeEntrySchema = new mongoose.Schema({
   employee: {
@@ -47,161 +77,106 @@ const TimeEntrySchema = new mongoose.Schema({
     ref: "Employee",
     required: true,
   },
-
-  clockIn: {
-    type: Date,
-    required: true,
-  },
-
-  clockOut: {
-    type: Date,
-    validate: {
-      validator: function (value) {
-        return !value || value > this.clockIn;
-      },
-      message: "Clock-out must be after clock-in",
-    },
-  },
-
-  durationMinutes: {
-    type: Number,
-    min: 0,
-    default: 0,
-  },
-
-  note: {
-    type: String,
-    maxlength: 500,
-    trim: true,
-  },
-
-  source: {
-    type: String,
-    enum: ["web", "manual", "api", "mobile"],
-    default: "web",
-  },
-
-  createdAt: {
-    type: Date,
-    default: Date.now,
-  },
+  clockIn: { type: Date, required: true },
+  clockOut: Date,
+  durationMinutes: { type: Number, default: 0 },
+  createdAt: { type: Date, default: nowUTC },
 });
-
-TimeEntrySchema.index({ employee: 1, createdAt: -1 });
-
 
 const User = mongoose.model("User", UserSchema);
 const Employee = mongoose.model("Employee", EmployeeSchema);
 const TimeEntry = mongoose.model("TimeEntry", TimeEntrySchema);
 
+
 async function createAdminIfMissing() {
-  try {
-    const count = await User.countDocuments();
-    if (count === 0) {
-      const hash = await bcrypt.hash(DEFAULT_ADMIN_PASS, 10);
-      await User.create({
-        username: "admin",
-        passwordHash: hash,
-        role: "admin",
-      });
-      console.log(
-        "Default admin created → username: admin password:",
-        DEFAULT_ADMIN_PASS
-      );
-    }
-  } catch (err) {
-    console.error("Admin creation error:", err.message);
+  const count = await User.countDocuments();
+  if (count === 0) {
+    const hash = await bcrypt.hash(DEFAULT_ADMIN_PASS, 10);
+    await User.create({
+      username: "admin",
+      passwordHash: hash,
+      role: "admin",
+    });
+    console.log("Default admin created (username: admin)");
   }
 }
 
-createAdminIfMissing();
+
 
 const authMiddleware = asyncHandler(async (req, res, next) => {
   const auth = req.headers.authorization;
-
-  if (!auth || !auth.startsWith("Bearer ")) {
-    return safeJson(res, 401, { error: "Authorization token missing" });
-  }
+  if (!auth?.startsWith("Bearer "))
+    return safeJson(res, 401, { error: "Missing token" });
 
   try {
-    const decoded = jwt.verify(auth.slice(7), JWT_SECRET);
-    if (!decoded.id || !decoded.role) {
-      return safeJson(res, 401, { error: "Invalid token payload" });
-    }
-    req.user = decoded;
+    req.user = jwt.verify(auth.slice(7), JWT_SECRET);
     next();
   } catch {
-    return safeJson(res, 401, { error: "Invalid or expired token" });
+    return safeJson(res, 401, { error: "Invalid token" });
   }
 });
 
-const requireRole = (roles) =>
-  asyncHandler(async (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return safeJson(res, 403, { error: "Forbidden" });
-    }
-    next();
-  });
 
+app.get("/", (req, res) =>
+  res.send("Employee Time Management API is running")
+);
 
-app.get("/", (req, res) => {
-  res.send("Employee Time Management API is running");
-});
-
-
-
+// ---------- AUTH ----------
 app.post(
   "/api/auth/login",
   asyncHandler(async (req, res) => {
     const { username, password } = req.body;
 
-    if (!username || !password) {
-      return safeJson(res, 400, { error: "All fields required" });
-    }
+    if (!username || !password)
+      return safeJson(res, 400, { error: "Username & password required" });
 
     const user = await User.findOne({ username });
-    if (!user) return safeJson(res, 401, { error: "Invalid credentials" });
-
-    const match = await bcrypt.compare(password, user.passwordHash);
-    if (!match) return safeJson(res, 401, { error: "Invalid credentials" });
+    if (!user || !(await bcrypt.compare(password, user.passwordHash)))
+      return safeJson(res, 401, { error: "Invalid credentials" });
 
     const token = jwt.sign(
       { id: user._id, role: user.role },
       JWT_SECRET,
-      { expiresIn: "1d" }
+      { expiresIn: "8h" }
     );
 
     safeJson(res, 200, { token });
   })
 );
 
-
+// ---------- EMPLOYEES ----------
 app.post(
   "/api/employees",
   authMiddleware,
-  requireRole(["admin", "manager"]),
   asyncHandler(async (req, res) => {
-    const { name, email, department } = req.body;
+    if (!req.body.name)
+      return safeJson(res, 400, { error: "Employee name required" });
 
-    if (!name || !email) {
-      return safeJson(res, 400, { error: "Name and email required" });
-    }
-
-    const employee = await Employee.create({ name, email, department });
-    safeJson(res, 201, employee);
+    const emp = await Employee.create(req.body);
+    safeJson(res, 201, emp);
   })
 );
 
-
+// ---------- TIME TRACKING ----------
 app.post(
-  "/api/time-entry/clock-in",
+  "/api/time/clockin",
   authMiddleware,
   asyncHandler(async (req, res) => {
     const { employeeId } = req.body;
+    if (!isValidObjectId(employeeId))
+      return safeJson(res, 400, { error: "Invalid employee ID" });
+
+    const open = await TimeEntry.findOne({
+      employee: employeeId,
+      clockOut: null,
+    });
+
+    if (open)
+      return safeJson(res, 409, { error: "Already clocked in" });
 
     const entry = await TimeEntry.create({
       employee: employeeId,
-      clockIn: new Date(),
+      clockIn: nowUTC(),
     });
 
     safeJson(res, 201, entry);
@@ -209,30 +184,48 @@ app.post(
 );
 
 app.post(
-  "/api/time-entry/clock-out/:id",
+  "/api/time/clockout",
   authMiddleware,
   asyncHandler(async (req, res) => {
-    const entry = await TimeEntry.findById(req.params.id);
-    if (!entry) return safeJson(res, 404, { error: "Entry not found" });
+    const { employeeId } = req.body;
 
-    entry.clockOut = new Date();
-    entry.durationMinutes = Math.floor(
-      (entry.clockOut - entry.clockIn) / 60000
-    );
+    const entry = await TimeEntry.findOne({
+      employee: employeeId,
+      clockOut: null,
+    });
 
+    if (!entry)
+      return safeJson(res, 400, { error: "No active clock-in found" });
+
+    entry.clockOut = nowUTC();
+    entry.durationMinutes = minutesBetween(entry.clockIn, entry.clockOut);
     await entry.save();
+
     safeJson(res, 200, entry);
   })
 );
 
-
-app.use((err, req, res, next) => {
-  console.error(err);
-  safeJson(res, 500, { error: "Server error" });
+app.use("/api", (req, res) => {
+  safeJson(res, 404, { error: "Endpoint not found" });
 });
 
 
-app.listen(PORT, () =>
-  console.log(`Server running on http://localhost:${PORT}`)
-);
+app.use((err, req, res, next) => {
+  console.error("Server Error:", err);
+  safeJson(res, 500, { error: "Internal Server Error" });
+});
 
+
+mongoose
+  .connect(MONGO_URI)
+  .then(async () => {
+    console.log("MongoDB Connected");
+    await createAdminIfMissing();
+    app.listen(APP_PORT, () =>
+      console.log(`Server running on http://localhost:${APP_PORT}`)
+    );
+  })
+  .catch((err) => {
+    console.error("MongoDB Error:", err);
+    process.exit(1);
+  });
