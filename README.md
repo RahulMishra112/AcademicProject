@@ -47,7 +47,7 @@ AcademicProject/
 - Git & GitHub
 
 ---
-
+## 📸 Project Preview ![alt text](<images/Screenshot 2025-11-25 230226.png>) ![alt text](<images/Screenshot 2025-11-25 231912.png>) ![alt text](<images/Screenshot 2025-11-25 231923.png>) ![alt text](<images/Screenshot 2025-11-25 231954.png>) ![alt text](<images/Screenshot 2025-11-25 232019.png>)
 
 ---
 
